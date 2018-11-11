@@ -2278,6 +2278,14 @@ MoveBase.h
 TrialMol.h
 /home/greg/GOMC/src/TrialMol.h
 
+/home/greg/GOMC/src/ReplDirSetup.h
+dirent.h
+-
+mpi.h
+-
+repl_ex.h
+/home/greg/GOMC/src/repl_ex.h
+
 /home/greg/GOMC/src/Setup.h
 string
 -
@@ -2319,6 +2327,8 @@ mpi.h
 -
 sys/stat.h
 -
+ReplDirSetup.h
+/home/greg/GOMC/src/ReplDirSetup.h
 
 /home/greg/GOMC/src/Simulation.h
 CPUSide.h
@@ -2329,8 +2339,6 @@ StaticVals.h
 /home/greg/GOMC/src/StaticVals.h
 BasicTypes.h
 /home/greg/GOMC/src/BasicTypes.h
-dirent.h
--
 
 /home/greg/GOMC/src/StaticVals.cpp
 StaticVals.h

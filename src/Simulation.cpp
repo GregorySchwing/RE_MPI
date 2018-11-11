@@ -13,10 +13,12 @@ along with this program, also can be found at <http://www.gnu.org/licenses/>.
 #include <iomanip>
 #include <mpi.h>
 #include <sys/stat.h>
+#include "ReplDirSetup.h"
+
 //#include "gromacs/mdtypes/commrec.h"
 
 Simulation::Simulation(char const*const configFileName)
-{
+{ 
   //NOTE:
   //IMPORTANT! Keep this order...
   //as system depends on staticValues, and cpu sometimes depends on both.
@@ -68,32 +70,7 @@ void Simulation::RunSimulation(void)
   MPI_Comm_size(MPI_COMM_WORLD, &nnodes);
   
   if(nnodes>1){
-      
-    directory_stream << "temp_" << staticValues->forcefield.T_in_K;
-    directory_name = directory_stream.str();
-    replica_directory = opendir(directory_name.c_str());
-    
-    if(replica_directory){
-    
-        //printf("Directory already exists : %s\n", directory_name.c_str());
-        /* Do whatever gromacs does here w the backups #1, #2, ect.
-            path_stream << "./" << out.statistics.settings.uniqueStr.val << ".console_out";
-            path_string = path_stream.str();
-        */
-        path_stream << "./" << directory_name << "/replica_log.txt";
-        path_string = path_stream.str();
-    } else {
-        printf("Creating directory : %s\n", directory_name.c_str());
-        const int dir_err = mkdir(directory_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-        if (-1 == dir_err){
-            printf("Error creating directory! Writing in pwd\n");
-            path_stream << "./" << directory_name << "_replica_log.txt";
-            path_string = path_stream.str();
-        } else {
-            path_stream << "./" << directory_name << "/" << "replica_log.txt";
-            path_string = path_stream.str();
-        }
-    }
+    ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams);
   }
   const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
   //if (useReplicaExchange && MASTER(cr)) {

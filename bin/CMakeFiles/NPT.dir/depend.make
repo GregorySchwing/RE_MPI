@@ -1556,6 +1556,7 @@ CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/PRNG.h
 CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/PRNGSetup.h
 CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/PSFOutput.h
 CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/Reader.h
+CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/ReplDirSetup.h
 CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/Setup.h
 CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/SimEventFrequency.h
 CMakeFiles/NPT.dir/src/Simulation.cpp.o: ../src/Simulation.cpp

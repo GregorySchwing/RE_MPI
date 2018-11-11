@@ -594,6 +594,14 @@ void ConfigSetup::Init(const char *fileName, ReplicaExchangeParameters *replExPa
         replExParams->numExchanges = stringtoi(line[1]);
     } else if(line[0] == "Replica_Exchange_Seed") {
         replExParams->randomSeed = stringtoi(line[1]);
+    } else if(line[0] == "Multisim_Title"){
+        std::stringstream ss;
+        for (int i = 1; i < line.size(); i++){
+            ss << line[i];
+            if (i+1 != line.size())
+                ss << "_";
+        }
+        replExParams->multisimTitle = ss.str();
     } else {
       cout << "Warning: Unknown input " << line[0] << "!" << endl;
     }

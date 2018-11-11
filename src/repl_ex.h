@@ -55,13 +55,15 @@ struct ReplicaExchangeParameters
     ReplicaExchangeParameters() :
         exchangeInterval(0),
         numExchanges(0),
-        randomSeed(-1)
+        randomSeed(-1),
+        multisimTitle("Replica_Exchange_Simulation")
     {
     };
 
     int exchangeInterval; /* Interval in steps at which to attempt exchanges, 0 means no replica exchange */
     int numExchanges;     /* The number of exchanges to attempt at an exchange step */
     int randomSeed;       /* The random seed, -1 means generate a seed */
+    string multisimTitle; /* The title of the simulation */
 };
 
 /* Abstract type for replica exchange */

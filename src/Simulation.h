@@ -12,7 +12,7 @@ along with this program, also can be found at <http://www.gnu.org/licenses/>.
 #include "System.h"
 #include "StaticVals.h"
 #include "BasicTypes.h"
-#include <dirent.h>
+
 
 class Simulation
 {
@@ -32,12 +32,7 @@ private:
   CPUSide * cpu;
   ulong totalSteps;
   ReplicaExchangeParameters replExParams;
-  DIR* replica_directory = NULL;
-  std::stringstream directory_stream;
-  std::string directory_name;
-  std::stringstream path_stream;
-  std::string path_string;
-  
+  string DefaultMultiSimLabel;
 };
 
 #endif /*SIMULATION_H*/
