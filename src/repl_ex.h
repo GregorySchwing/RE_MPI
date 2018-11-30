@@ -40,9 +40,6 @@
 
 #include <cstdio>
 
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
-
 struct gmx_enerdata_t;
 struct gmx_multisim_t;
 struct t_commrec;
@@ -70,19 +67,18 @@ struct ReplicaExchangeParameters
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
 
 gmx_repl_ex_t
-init_replica_exchange(FILE                            *fplog,
-                      const gmx_multisim_t            *ms,
-                      const t_state                   *state,
-                      const t_inputrec                *ir,
-                      const ReplicaExchangeParameters &replExParams);
+//float*
+init_replica_exchange(FILE                                    *fplog,
+                      float                              temperature,
+                      ReplicaExchangeParameters * replExParams);
 /* Should only be called on the master ranks */
 
-gmx_bool replica_exchange(FILE *fplog,
+/*bool replica_exchange(FILE *fplog,
                           const t_commrec *cr,
                           gmx_repl_ex_t re,
                           t_state *state, gmx_enerdata_t *enerd,
                           t_state *state_local,
-                          gmx_int64_t step, real time);
+                          gmx_int64_t step, real time);*/
 /* Attempts replica exchange, should be called on all ranks.
  * Returns TRUE if this state has been exchanged.
  * When running each replica in parallel,

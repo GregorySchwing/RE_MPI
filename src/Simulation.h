@@ -32,7 +32,6 @@ private:
   CPUSide * cpu;
   ulong totalSteps;
   ReplicaExchangeParameters replExParams;
-  string DefaultMultiSimLabel;
 };
 
 #endif /*SIMULATION_H*/

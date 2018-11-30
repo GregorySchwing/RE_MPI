@@ -13,6 +13,7 @@
 
 #include <dirent.h>
 #include <mpi.h>
+#include <iostream>
 
 #include "repl_ex.h"
 
@@ -22,19 +23,19 @@ class ReplDirSetup{
 public:
 
 
-ReplDirSetup(int temperature, ReplicaExchangeParameters replExParams){
-    ReplDirSetup::setupReplicaDirectories(temperature, replExParams);
+ReplDirSetup(int temperature, ReplicaExchangeParameters replExParams, FILE * fplog){
+    fplog = fopen(ReplDirSetup::setupReplicaDirectories(temperature, replExParams).c_str(), "w");
 }
 
- void setupReplicaDirectories(int temperature, ReplicaExchangeParameters replExParams){   
+ string setupReplicaDirectories(int temperature, ReplicaExchangeParameters replExParams){   
      
     replica_temp << "temp_" << temperature;
     std::string replica_directory = replica_temp.str();
 
-    mkdirWrapper(replExParams.multisimTitle, replica_directory);
+    return mkdirWrapper(replExParams.multisimTitle, replica_directory);
  }
  
- void mkdirWrapper(std::string multisim_directory_name, string replica_directory_name){
+ string mkdirWrapper(std::string multisim_directory_name, string replica_directory_name){
 
     replica_stream << multisim_directory_name << "/" 
                 << replica_directory_name;
@@ -43,14 +44,15 @@ ReplDirSetup(int temperature, ReplicaExchangeParameters replExParams){
     printf("Creating directory : %s\n", multisim_directory_name.c_str());
     mkdir(multisim_directory_name.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
     mkdir(replica_directory_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-    path_to_replica_directory = replica_directory_path;
+    
+    replica_stream << "/repl_log.txt";
+    return replica_stream.str();;
     
  }
     
 private:
     std::stringstream replica_temp;
     std::stringstream replica_stream;
-    std::string path_to_replica_directory;
 };
 #endif /* REPLDIRSETUP_H */
 
