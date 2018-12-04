@@ -21,7 +21,7 @@ along with this program, also can be found at <http://www.gnu.org/licenses/>.
 #include "XYZArray.h" //For box dimensions.
 #include "MoveConst.h"
 #include "UnitConst.h" //For bar --> mol*K / A3 conversion
-#include "repl_ex.h"
+#include "ReplEx.h"
 
 #if ENSEMBLE == GCMC
 #include <sstream>  //for reading in variable # of chem. pot.

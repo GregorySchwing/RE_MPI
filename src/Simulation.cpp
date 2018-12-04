@@ -14,7 +14,9 @@ along with this program, also can be found at <http://www.gnu.org/licenses/>.
 #include <mpi.h>
 #include <sys/stat.h>
 #include "ReplDirSetup.h"
-#include "repl_ex.cpp"
+#include "ReplEx.cpp"
+
+
 
 Simulation::Simulation(char const*const configFileName)
 { 
@@ -22,7 +24,7 @@ Simulation::Simulation(char const*const configFileName)
   //IMPORTANT! Keep this order...
   //as system depends on staticValues, and cpu sometimes depends on both.
   Setup set;
-  set.Init(configFileName, &replExParams);
+  set.Init(configFileName, replExParams);
   totalSteps = set.config.sys.step.total;
   staticValues = new StaticVals(set);
   system = new System(*staticValues);
@@ -57,28 +59,25 @@ void Simulation::RunSimulation(void)
 {
   double startEnergy = system->potential.totalEnergy.total;
   
-  FILE *fplog;
-  
-  int nnodes;
-  int nodeid;
   MPI_Comm_size(MPI_COMM_WORLD, &nnodes);
   MPI_Comm_rank(MPI_COMM_WORLD, &nodeid);
   
-  const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
-
-  
+  const bool useReplicaExchange = (replExParams->exchangeInterval > 0);
   //if(nnodes>1 && useReplicaExchange){
-  if(useReplicaExchange){
-    ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams, fplog);
-    
-    fprintf(fplog, "test");
-  }
-  if (useReplicaExchange) {
+  if(nnodes>1){
+    ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams);
+  
+    if (useReplicaExchange) {
+      fplog = fopen(rd.path_to_replica_log_file.c_str(), "w");
+      replEx = init_replica_exchange(fplog, staticValues->forcefield.T_in_K,
+                                     replExParams);
       
-      gmx_repl_ex * repl_ex = init_replica_exchange(fplog, staticValues->forcefield.T_in_K,
-                                     &replExParams);
-      //float* temps = init_replica_exchange(fplog, staticValues->forcefield.T_in_K,
-        //                              &replExParams);
+      stateLocal = new ReplicaState(&system->potential, 
+                                    &system->coordinates,
+                                    &system->com,
+                                    &system->calcEwald,
+                                    &system->cellList);
+    }
   }
   
   for (ulong step = 0; step < totalSteps; step++) {
@@ -95,13 +94,31 @@ void Simulation::RunSimulation(void)
         system->potential = system->calcEnergy.SystemTotal();
       }
     }
-
+    
+    if(step+1 == totalSteps)
+        bLastStep = true;
+    
+    bDoReplEx = (useReplicaExchange && (step > cpu->equilSteps) && !bLastStep && 
+        (step % replExParams->exchangeInterval == 0) && step >= cpu->equilSteps);
+  
+#if ENSEMBLE == NVT    
+    if (bDoReplEx) {
+        bExchanged = replica_exchange(fplog, replEx,
+                                      stateGlobal, system->potential.totalEnergy.total,
+                                      staticValues->boxDimensions->GetTotVolume(),
+                                      step, replExParams);
+    }    
+#endif
+    
 #ifndef NDEBUG
     if((step + 1) % 1000 == 0)
       RunningCheck(step);
 #endif
   }
   system->PrintTime();
+  if (useReplicaExchange)
+     print_replica_exchange_statistics(fplog, replEx);
+     
 }
 
 #ifndef NDEBUG

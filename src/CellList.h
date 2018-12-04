@@ -13,6 +13,7 @@ along with this program, also can be found at <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <cassert>
 #include <iostream>
+#include <omp.h>
 
 class Molecules;
 class XYZArray;
@@ -23,6 +24,30 @@ class CellList
 {
 public:
   explicit CellList(const Molecules& mols, BoxDimensions& dims);
+  
+  CellList& operator=(CellList const& rhs){
+
+    list = rhs.list;
+
+    for (int i = 0; i < BOX_TOTAL; i++){
+        neighbors[i] = rhs.neighbors[i];
+        head[i]      = rhs.head[i];
+        cellSize[i]  = rhs.cellSize[i];
+        for (int j = 0; j < 3; j++){
+            edgeCells[i][j] = rhs.edgeCells[i][j];
+        }
+    }
+
+    // Dimensions is a reference to the system's object
+    // Doesnt need to be swapped here
+    //  *dimensions = *rhs.dimensions;
+
+    cutoff = rhs.cutoff;
+    isBuilt = rhs.isBuilt;
+
+    return *this;
+}
+
 
   void SetCutoff(double cut)
   {
@@ -115,8 +140,10 @@ public:
   }
 
 private:
+// GJS
   int at;
   std::vector<int>::const_iterator list;
+// GJS
 };
 
 
@@ -140,10 +167,11 @@ public:
   void Next();
 
 private:
-
+// GJS
   CellList::Cell cell;
   std::vector<int>::const_iterator head;
   std::vector<int>::const_iterator neighbor, nEnd;
+// GJS
 };
 
 inline CellList::Cell CellList::EnumerateCell(int cell, int box) const
@@ -236,10 +264,14 @@ private:
   // skip to next nonempty cell
   void NextCell();
 
+// GJS
   CellList::Cell cellParticle;
   CellList::Neighbors localParticle;
+// maybe not the reference, or maybe remove the const?
   const CellList& cellList;
+// maybe not the reference
   int box, cell, nCells;
+// GJS
 };
 
 inline CellList::Pairs::Pairs(const CellList& cellList, int box) :

@@ -12,6 +12,8 @@ along with this program, also can be found at <http://www.gnu.org/licenses/>.
 #include "System.h"
 #include "StaticVals.h"
 #include "BasicTypes.h"
+//#include "ReplicaState.h"
+#include "ReplEx.h"
 
 
 class Simulation
@@ -31,7 +33,14 @@ private:
   System * system;
   CPUSide * cpu;
   ulong totalSteps;
-  ReplicaExchangeParameters replExParams;
+  ReplicaExchangeParameters * replExParams;
+  FILE * fplog;
+  int nnodes;
+  int nodeid;
+  bool bDoReplEx, bLastStep, bExchanged;
+  ReplicaState * stateLocal;
+  ReplicaState * stateGlobal;
+  gmx_repl_ex * replEx;
 };
 
 #endif /*SIMULATION_H*/

@@ -15,7 +15,7 @@ along with this program, also can be found at <http://www.gnu.org/licenses/>.
 #include "PDBSetup.h"
 #include "PRNGSetup.h"
 #include "MolSetup.h"
-#include "repl_ex.h"
+#include "ReplEx.h"
 
 class Setup
 {

@@ -49,6 +49,8 @@ public:
   Ewald(StaticVals & stat, System & sys);
   ~Ewald();
 
+  Ewald& operator=(Ewald const& rhs);
+
   virtual void Init();
 
   virtual void AllocMem();
@@ -117,6 +119,7 @@ public:
 
   virtual void UpdateVectorsAndRecipTerms();
 
+
 private:
   double currentEnergyRecip[BOXES_WITH_U_NB];
 
@@ -138,6 +141,7 @@ protected:
   uint imageTotal;
   uint imageLarge;
   uint *kmax;
+// Verify that these pointers are swapping
   double **sumRnew; //cosine serries
   double **sumInew; //sine serries
   double **sumRref;
