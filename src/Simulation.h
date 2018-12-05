@@ -33,7 +33,7 @@ private:
   System * system;
   CPUSide * cpu;
   ulong totalSteps;
-  ReplicaExchangeParameters * replExParams;
+  ReplicaExchangeParameters replExParams;
   FILE * fplog;
   int nnodes;
   int nodeid;

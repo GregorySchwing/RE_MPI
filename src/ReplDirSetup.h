@@ -24,17 +24,19 @@ public:
     
 string path_to_replica_log_file;
 string path_to_replica_directory;
+std::stringstream replica_temp;
+std::stringstream replica_stream;
 
 
-ReplDirSetup(int temperature, ReplicaExchangeParameters * replExParams){
+ReplDirSetup(int temperature, ReplicaExchangeParameters replExParams){
     ReplDirSetup::setupReplicaDirectories(temperature, replExParams);
 }
 
- void setupReplicaDirectories(int temperature, ReplicaExchangeParameters * replExParams){   
+ void setupReplicaDirectories(int temperature, ReplicaExchangeParameters replExParams){   
      
     replica_temp << "temp_" << temperature;
     std::string replica_directory = replica_temp.str();
-    return mkdirWrapper(replExParams->multisimTitle, replica_directory);
+    mkdirWrapper(replExParams.multisimTitle, replica_directory);
  }
  
  void mkdirWrapper(std::string multisim_directory_name, string replica_directory_name){
@@ -54,10 +56,7 @@ ReplDirSetup(int temperature, ReplicaExchangeParameters * replExParams){
  }
 
  
- 
-private:
-    std::stringstream replica_temp;
-    std::stringstream replica_stream;
+
 };
 #endif /* REPLDIRSETUP_H */
 

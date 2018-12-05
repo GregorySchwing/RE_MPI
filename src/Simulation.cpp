@@ -24,7 +24,7 @@ Simulation::Simulation(char const*const configFileName)
   //IMPORTANT! Keep this order...
   //as system depends on staticValues, and cpu sometimes depends on both.
   Setup set;
-  set.Init(configFileName, replExParams);
+  set.Init(configFileName, &replExParams);
   totalSteps = set.config.sys.step.total;
   staticValues = new StaticVals(set);
   system = new System(*staticValues);
@@ -62,15 +62,15 @@ void Simulation::RunSimulation(void)
   MPI_Comm_size(MPI_COMM_WORLD, &nnodes);
   MPI_Comm_rank(MPI_COMM_WORLD, &nodeid);
   
-  const bool useReplicaExchange = (replExParams->exchangeInterval > 0);
+  const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
   //if(nnodes>1 && useReplicaExchange){
-  if(nnodes>1){
-    ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams);
+  //if(nnodes>1){
+   ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams);
   
     if (useReplicaExchange) {
       fplog = fopen(rd.path_to_replica_log_file.c_str(), "w");
       replEx = init_replica_exchange(fplog, staticValues->forcefield.T_in_K,
-                                     replExParams);
+                                     &replExParams);
       
       stateLocal = new ReplicaState(&system->potential, 
                                     &system->coordinates,
@@ -78,7 +78,7 @@ void Simulation::RunSimulation(void)
                                     &system->calcEwald,
                                     &system->cellList);
     }
-  }
+  //}
   
   for (ulong step = 0; step < totalSteps; step++) {
     system->moveSettings.AdjustMoves(step);
@@ -99,14 +99,14 @@ void Simulation::RunSimulation(void)
         bLastStep = true;
     
     bDoReplEx = (useReplicaExchange && (step > cpu->equilSteps) && !bLastStep && 
-        (step % replExParams->exchangeInterval == 0) && step >= cpu->equilSteps);
+        (step % replExParams.exchangeInterval == 0) && step >= cpu->equilSteps);
   
 #if ENSEMBLE == NVT    
     if (bDoReplEx) {
         bExchanged = replica_exchange(fplog, replEx,
                                       stateGlobal, system->potential.totalEnergy.total,
                                       staticValues->boxDimensions->GetTotVolume(),
-                                      step, replExParams);
+                                      step, &replExParams);
     }    
 #endif
     

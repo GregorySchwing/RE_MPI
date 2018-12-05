@@ -597,9 +597,13 @@ void ConfigSetup::Init(const char *fileName, ReplicaExchangeParameters *replExPa
     } else if(line[0] == "Multisim_Title"){
         std::stringstream ss;
         for (int i = 1; i < line.size(); i++){
-            ss << line[i];
-            if (i+1 != line.size())
-                ss << "_";
+            if (line[i] == " ") {
+                ss << '_';
+            } else {    
+                ss << line[i];
+                if (i+1 != line.size())
+                    ss << "_";
+            }
         }
         replExParams->multisimTitle = ss.str();
     } else {
