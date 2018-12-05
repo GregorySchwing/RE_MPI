@@ -1,3 +1,7 @@
+#ifndef _replica_state_h
+#define _replica_state_h
+
+
 class SystemPotential;
 class Coordinates;
 class COM;
@@ -39,3 +43,4 @@ class ReplicaState
           CellList* cellList; //ex
 };
 
+#endif

@@ -39,6 +39,7 @@
 #define _repl_ex_h
 
 #include <cstdio>
+
 #include "ReplicaState.h"
 
 struct gmx_enerdata_t;

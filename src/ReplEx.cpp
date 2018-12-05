@@ -37,7 +37,9 @@
 
 
 #include "ReplEx.h"
+#include "XYZArray.h"
 #include <mpi.h>
+//#include "ReplicaExchangeHelper.cpp"
 
 #include <cmath>
 //#include <random>
@@ -372,6 +374,7 @@ bool replica_exchange(FILE *fplog, struct gmx_repl_ex *re,
     
     prepare_to_do_exchange(re, replica_id, &maxswap, &bThisReplicaExchanged);
     
+    
     if (bThisReplicaExchanged)
     {
             /* There will be only one swap cycle with standard replica
@@ -389,7 +392,11 @@ bool replica_exchange(FILE *fplog, struct gmx_repl_ex *re,
                     //{
                         //fprintf(debug, "Exchanging %d with %d\n", replica_id, exchange_partner);
                     //}
-                    //exchange_state(ms, exchange_partner, state);
+                    //exchange_state(ms, exchange_partner, state);                    
+
+                    exchange_doubles(exchange_partner, stateGlobal->coordinates->x, stateGlobal->coordinates->Count());
+                    exchange_doubles(exchange_partner, stateGlobal->coordinates->y, stateGlobal->coordinates->Count());
+                    exchange_doubles(exchange_partner, stateGlobal->coordinates->z, stateGlobal->coordinates->Count());
                 }
             }
     }
@@ -971,10 +978,114 @@ static void exchange_floats(int b, float *v, int n)
         {
             v[i] = buf[i];
         }
-        //sfree(buf);
+        free(buf);
     }
 }
 
+static void exchange_potential(int b, ReplicaState * stateGlobal){
+    
+    double *v;
+    double *buf;
+    
+    v =     (double*)malloc(63*sizeof(double));
+    buf =   (double*)malloc(63*sizeof(double));
+    
+    if(stateGlobal)
+    {
+        /*
+           MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+           buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+         */
+             
+        v[0]    =   stateGlobal->potential->boxVirial->inter;
+        v[1]    =   stateGlobal->potential->boxVirial->tc;
+        v[2]    =   stateGlobal->potential->boxVirial->real;                           
+        v[3]    =   stateGlobal->potential->boxVirial->recip;
+        v[4]    =   stateGlobal->potential->boxVirial->self;
+        v[5]    =   stateGlobal->potential->boxVirial->correction;
+        v[6]    =   stateGlobal->potential->boxVirial->totalElect;
+        v[7]    =   stateGlobal->potential->boxVirial->total;
+        
+        int counter = 8;
+        for (int i = 0; i < 3; i++){
+            for (int j = 0; j < 3; j++){
+                v[counter]      =   stateGlobal->potential->boxVirial->interTens[i][j];
+                v[counter+9]    =   stateGlobal->potential->boxVirial->realTens[i][j];
+                v[counter+18]   =   stateGlobal->potential->boxVirial->recipTens[i][j];
+                v[counter+27]   =   stateGlobal->potential->boxVirial->totalTens[i][j];
+                v[counter+36]   =   stateGlobal->potential->boxVirial->corrTens[i][j];
+                counter++;
+            }
+        }
+        
+        v[53]    =   stateGlobal->potential->boxEnergy->intraBond;
+        v[54]    =   stateGlobal->potential->boxEnergy->intraNonbond;
+        v[55]    =   stateGlobal->potential->boxEnergy->inter;                           
+        v[56]    =   stateGlobal->potential->boxEnergy->tc;
+        v[57]    =   stateGlobal->potential->boxEnergy->total;
+        v[58]    =   stateGlobal->potential->boxEnergy->real;
+        v[59]    =   stateGlobal->potential->boxEnergy->recip;
+        v[60]    =   stateGlobal->potential->boxEnergy->self;
+        v[61]    =   stateGlobal->potential->boxEnergy->correction;
+        v[62]    =   stateGlobal->potential->boxEnergy->totalElect;
+        
+        
+        MPI_Request mpi_req;
+
+        MPI_Isend(v, 63*sizeof(double), MPI_BYTE, b, 0,
+                    MPI_COMM_WORLD, &mpi_req);
+        MPI_Recv(buf, 63*sizeof(double), MPI_BYTE, b, 0,
+                    MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
+        
+        for (int i = 0; i < 63; i++)
+        {
+            v[i] = buf[i];
+        }
+        
+                /*
+           MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+           buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+         */
+             
+        stateGlobal->potential->boxVirial->inter        =   v[0];
+        stateGlobal->potential->boxVirial->tc           =   v[1];
+        stateGlobal->potential->boxVirial->real         =   v[2];                
+        stateGlobal->potential->boxVirial->recip        =   v[3];
+        stateGlobal->potential->boxVirial->self         =   v[4];
+        stateGlobal->potential->boxVirial->correction   =   v[5];
+        stateGlobal->potential->boxVirial->totalElect   =   v[6];
+        stateGlobal->potential->boxVirial->total        =   v[7];
+        
+        counter = 8;
+        for (int i = 0; i < 3; i++){
+            for (int j = 0; j < 3; j++){
+                stateGlobal->potential->boxVirial->interTens[i][j]   =   v[counter];
+                stateGlobal->potential->boxVirial->realTens[i][j]    =   v[counter+9];
+                stateGlobal->potential->boxVirial->recipTens[i][j]   =   v[counter+18];
+                stateGlobal->potential->boxVirial->totalTens[i][j]   =   v[counter+27];
+                stateGlobal->potential->boxVirial->corrTens[i][j]    =   v[counter+36];
+                counter++;
+            }
+        }
+        
+        stateGlobal->potential->boxEnergy->intraBond    =   v[53];
+        stateGlobal->potential->boxEnergy->intraNonbond =   v[54];
+        stateGlobal->potential->boxEnergy->inter        =   v[55];                      
+        stateGlobal->potential->boxEnergy->tc           =   v[56];
+        stateGlobal->potential->boxEnergy->total        =   v[57];
+        stateGlobal->potential->boxEnergy->real         =   v[58];
+        stateGlobal->potential->boxEnergy->recip        =   v[59];
+        stateGlobal->potential->boxEnergy->self         =   v[60];
+        stateGlobal->potential->boxEnergy->correction   =   v[61];
+        stateGlobal->potential->boxEnergy->totalElect   =   v[62];
+        
+        free(buf);
+        free(v);
+    }
+}
 
 static void exchange_doubles(int b, double *v, int n)
 {
@@ -992,9 +1103,9 @@ static void exchange_doubles(int b, double *v, int n)
         {
             MPI_Request mpi_req;
 
-            MPI_Isend(v, n*sizeof(double), MPI_BYTE, MSRANK(ms, b), 0,
+            MPI_Isend(v, n*sizeof(double), MPI_BYTE, b, 0,
                       MPI_COMM_WORLD, &mpi_req);
-            MPI_Recv(buf, n*sizeof(double), MPI_BYTE, MSRANK(ms, b), 0,
+            MPI_Recv(buf, n*sizeof(double), MPI_BYTE, b, 0,
                      MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
@@ -1002,7 +1113,7 @@ static void exchange_doubles(int b, double *v, int n)
         {
             v[i] = buf[i];
         }
-        //sfree(buf);
+        free(buf);
     }
 }
 

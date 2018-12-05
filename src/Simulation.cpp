@@ -63,7 +63,7 @@ void Simulation::RunSimulation(void)
   MPI_Comm_rank(MPI_COMM_WORLD, &nodeid);
   
   const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
-  //if(nnodes>1 && useReplicaExchange){
+  if(nnodes>1 && useReplicaExchange){
   //if(nnodes>1){
    ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams);
   
@@ -78,7 +78,7 @@ void Simulation::RunSimulation(void)
                                     &system->calcEwald,
                                     &system->cellList);
     }
-  //}
+  }
   
   for (ulong step = 0; step < totalSteps; step++) {
     system->moveSettings.AdjustMoves(step);
