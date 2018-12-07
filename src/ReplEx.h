@@ -129,6 +129,9 @@ static void exchange_state(int b, ReplicaState *state);
 //static void exchange_float_vecs(int b, float *v, int n);
 static void exchange_floats(int b, float *v, int n);
 static void exchange_doubles(int b, double *v, int n);
+static void exchange_potential(int b, ReplicaState * stateGlobal);
+static void exchange_ints(int b, int *v, int n);
+static void exchange_cell_list(int b, ReplicaState * stateGlobal);
 
 #endif  /* _repl_ex_h */
 

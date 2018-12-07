@@ -62,7 +62,7 @@ void Simulation::RunSimulation(void)
   MPI_Comm_size(MPI_COMM_WORLD, &nnodes);
   MPI_Comm_rank(MPI_COMM_WORLD, &nodeid);
   
-  const bool useReplicaExchange = (replExParams.exchangeInterval > 0);
+  const bool useReplicaExchange = (replExParams.exchangeInterval > 0 && nnodes>1);
   if(nnodes>1 && useReplicaExchange){
   //if(nnodes>1){
    ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams);
@@ -104,7 +104,7 @@ void Simulation::RunSimulation(void)
 #if ENSEMBLE == NVT    
     if (bDoReplEx) {
         bExchanged = replica_exchange(fplog, replEx,
-                                      stateGlobal, system->potential.totalEnergy.total,
+                                      stateLocal, system->potential.totalEnergy.total,
                                       staticValues->boxDimensions->GetTotVolume(),
                                       step, &replExParams);
     }    

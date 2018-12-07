@@ -38,6 +38,7 @@
 
 #include "ReplEx.h"
 #include "XYZArray.h"
+#include "CellList.h"
 #include <mpi.h>
 //#include "ReplicaExchangeHelper.cpp"
 
@@ -367,14 +368,15 @@ bool replica_exchange(FILE *fplog, struct gmx_repl_ex *re,
 
 //    if (MASTER(cr))
     replica_id  = re->repl;
-
+    
     // GJS figure out where vol is stored
     double vol = 0.0;
+    
+    
     test_for_replica_exchange(fplog, re, enerd, vol_par, step, replExParams);
     
     prepare_to_do_exchange(re, replica_id, &maxswap, &bThisReplicaExchanged);
-    
-    
+        
     if (bThisReplicaExchanged)
     {
             /* There will be only one swap cycle with standard replica
@@ -392,11 +394,19 @@ bool replica_exchange(FILE *fplog, struct gmx_repl_ex *re,
                     //{
                         //fprintf(debug, "Exchanging %d with %d\n", replica_id, exchange_partner);
                     //}
-                    //exchange_state(ms, exchange_partner, state);                    
+                    //exchange_state(ms, exchange_partner, state);        
+                    
+                   
+                    exchange_potential(exchange_partner, stateGlobal);
+                    exchange_cell_list(exchange_partner, stateGlobal);
 
                     exchange_doubles(exchange_partner, stateGlobal->coordinates->x, stateGlobal->coordinates->Count());
                     exchange_doubles(exchange_partner, stateGlobal->coordinates->y, stateGlobal->coordinates->Count());
                     exchange_doubles(exchange_partner, stateGlobal->coordinates->z, stateGlobal->coordinates->Count());
+                    
+                    exchange_doubles(exchange_partner, stateGlobal->com->x, stateGlobal->com->Count());
+                    exchange_doubles(exchange_partner, stateGlobal->com->y, stateGlobal->com->Count());
+                    exchange_doubles(exchange_partner, stateGlobal->com->z, stateGlobal->com->Count());
                 }
             }
     }
@@ -989,47 +999,47 @@ static void exchange_potential(int b, ReplicaState * stateGlobal){
     
     v =     (double*)malloc(63*sizeof(double));
     buf =   (double*)malloc(63*sizeof(double));
-    
     if(stateGlobal)
     {
+
         /*
            MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            ms->mpi_comm_masters,MPI_STATUS_IGNORE);
          */
-             
-        v[0]    =   stateGlobal->potential->boxVirial->inter;
-        v[1]    =   stateGlobal->potential->boxVirial->tc;
-        v[2]    =   stateGlobal->potential->boxVirial->real;                           
-        v[3]    =   stateGlobal->potential->boxVirial->recip;
-        v[4]    =   stateGlobal->potential->boxVirial->self;
-        v[5]    =   stateGlobal->potential->boxVirial->correction;
-        v[6]    =   stateGlobal->potential->boxVirial->totalElect;
-        v[7]    =   stateGlobal->potential->boxVirial->total;
+        v[0]    =   stateGlobal->potential->boxVirial[0].inter;
+        v[1]    =   stateGlobal->potential->boxVirial[0].tc;
+        v[2]    =   stateGlobal->potential->boxVirial[0].real;                           
+        v[3]    =   stateGlobal->potential->boxVirial[0].recip;
+        v[4]    =   stateGlobal->potential->boxVirial[0].self;
+        v[5]    =   stateGlobal->potential->boxVirial[0].correction;
+        v[6]    =   stateGlobal->potential->boxVirial[0].totalElect;
+        v[7]    =   stateGlobal->potential->boxVirial[0].total;
+                
+        
         
         int counter = 8;
         for (int i = 0; i < 3; i++){
             for (int j = 0; j < 3; j++){
-                v[counter]      =   stateGlobal->potential->boxVirial->interTens[i][j];
-                v[counter+9]    =   stateGlobal->potential->boxVirial->realTens[i][j];
-                v[counter+18]   =   stateGlobal->potential->boxVirial->recipTens[i][j];
-                v[counter+27]   =   stateGlobal->potential->boxVirial->totalTens[i][j];
-                v[counter+36]   =   stateGlobal->potential->boxVirial->corrTens[i][j];
+                v[counter]      =   stateGlobal->potential->boxVirial[0].interTens[i][j];
+                v[counter+9]    =   stateGlobal->potential->boxVirial[0].realTens[i][j];
+                v[counter+18]   =   stateGlobal->potential->boxVirial[0].recipTens[i][j];
+                v[counter+27]   =   stateGlobal->potential->boxVirial[0].totalTens[i][j];
+                v[counter+36]   =   stateGlobal->potential->boxVirial[0].corrTens[i][j];
                 counter++;
             }
         }
         
-        v[53]    =   stateGlobal->potential->boxEnergy->intraBond;
-        v[54]    =   stateGlobal->potential->boxEnergy->intraNonbond;
-        v[55]    =   stateGlobal->potential->boxEnergy->inter;                           
-        v[56]    =   stateGlobal->potential->boxEnergy->tc;
-        v[57]    =   stateGlobal->potential->boxEnergy->total;
-        v[58]    =   stateGlobal->potential->boxEnergy->real;
-        v[59]    =   stateGlobal->potential->boxEnergy->recip;
-        v[60]    =   stateGlobal->potential->boxEnergy->self;
-        v[61]    =   stateGlobal->potential->boxEnergy->correction;
-        v[62]    =   stateGlobal->potential->boxEnergy->totalElect;
-        
+        v[53]    =   stateGlobal->potential->boxEnergy[0].intraBond;
+        v[54]    =   stateGlobal->potential->boxEnergy[0].intraNonbond;
+        v[55]    =   stateGlobal->potential->boxEnergy[0].inter;                           
+        v[56]    =   stateGlobal->potential->boxEnergy[0].tc;
+        v[57]    =   stateGlobal->potential->boxEnergy[0].total;
+        v[58]    =   stateGlobal->potential->boxEnergy[0].real;
+        v[59]    =   stateGlobal->potential->boxEnergy[0].recip;
+        v[60]    =   stateGlobal->potential->boxEnergy[0].self;
+        v[61]    =   stateGlobal->potential->boxEnergy[0].correction;
+        v[62]    =   stateGlobal->potential->boxEnergy[0].totalElect;
         
         MPI_Request mpi_req;
 
@@ -1039,48 +1049,43 @@ static void exchange_potential(int b, ReplicaState * stateGlobal){
                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         
-        for (int i = 0; i < 63; i++)
-        {
-            v[i] = buf[i];
-        }
-        
                 /*
            MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            ms->mpi_comm_masters,MPI_STATUS_IGNORE);
          */
              
-        stateGlobal->potential->boxVirial->inter        =   v[0];
-        stateGlobal->potential->boxVirial->tc           =   v[1];
-        stateGlobal->potential->boxVirial->real         =   v[2];                
-        stateGlobal->potential->boxVirial->recip        =   v[3];
-        stateGlobal->potential->boxVirial->self         =   v[4];
-        stateGlobal->potential->boxVirial->correction   =   v[5];
-        stateGlobal->potential->boxVirial->totalElect   =   v[6];
-        stateGlobal->potential->boxVirial->total        =   v[7];
+        stateGlobal->potential->boxVirial[0].inter        =   buf[0];
+        stateGlobal->potential->boxVirial[0].tc           =   buf[1];
+        stateGlobal->potential->boxVirial[0].real         =   buf[2];                
+        stateGlobal->potential->boxVirial[0].recip        =   buf[3];
+        stateGlobal->potential->boxVirial[0].self         =   buf[4];
+        stateGlobal->potential->boxVirial[0].correction   =   buf[5];
+        stateGlobal->potential->boxVirial[0].totalElect   =   buf[6];
+        stateGlobal->potential->boxVirial[0].total        =   buf[7];
         
         counter = 8;
         for (int i = 0; i < 3; i++){
             for (int j = 0; j < 3; j++){
-                stateGlobal->potential->boxVirial->interTens[i][j]   =   v[counter];
-                stateGlobal->potential->boxVirial->realTens[i][j]    =   v[counter+9];
-                stateGlobal->potential->boxVirial->recipTens[i][j]   =   v[counter+18];
-                stateGlobal->potential->boxVirial->totalTens[i][j]   =   v[counter+27];
-                stateGlobal->potential->boxVirial->corrTens[i][j]    =   v[counter+36];
+                stateGlobal->potential->boxVirial[0].interTens[i][j]   =   buf[counter];
+                stateGlobal->potential->boxVirial[0].realTens[i][j]    =   buf[counter+9];
+                stateGlobal->potential->boxVirial[0].recipTens[i][j]   =   buf[counter+18];
+                stateGlobal->potential->boxVirial[0].totalTens[i][j]   =   buf[counter+27];
+                stateGlobal->potential->boxVirial[0].corrTens[i][j]    =   buf[counter+36];
                 counter++;
             }
         }
         
-        stateGlobal->potential->boxEnergy->intraBond    =   v[53];
-        stateGlobal->potential->boxEnergy->intraNonbond =   v[54];
-        stateGlobal->potential->boxEnergy->inter        =   v[55];                      
-        stateGlobal->potential->boxEnergy->tc           =   v[56];
-        stateGlobal->potential->boxEnergy->total        =   v[57];
-        stateGlobal->potential->boxEnergy->real         =   v[58];
-        stateGlobal->potential->boxEnergy->recip        =   v[59];
-        stateGlobal->potential->boxEnergy->self         =   v[60];
-        stateGlobal->potential->boxEnergy->correction   =   v[61];
-        stateGlobal->potential->boxEnergy->totalElect   =   v[62];
+        stateGlobal->potential->boxEnergy[0].intraBond    =   buf[53];
+        stateGlobal->potential->boxEnergy[0].intraNonbond =   buf[54];
+        stateGlobal->potential->boxEnergy[0].inter        =   buf[55];                      
+        stateGlobal->potential->boxEnergy[0].tc           =   buf[56];
+        stateGlobal->potential->boxEnergy[0].total        =   buf[57];
+        stateGlobal->potential->boxEnergy[0].real         =   buf[58];
+        stateGlobal->potential->boxEnergy[0].recip        =   buf[59];
+        stateGlobal->potential->boxEnergy[0].self         =   buf[60];
+        stateGlobal->potential->boxEnergy[0].correction   =   buf[61];
+        stateGlobal->potential->boxEnergy[0].totalElect   =   buf[62];
         
         free(buf);
         free(v);
@@ -1095,6 +1100,7 @@ static void exchange_doubles(int b, double *v, int n)
     if (v)
     {
         //snew(buf, n);
+        buf =   (double*)malloc(n*sizeof(double));
         /*
            MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
            buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
@@ -1106,6 +1112,36 @@ static void exchange_doubles(int b, double *v, int n)
             MPI_Isend(v, n*sizeof(double), MPI_BYTE, b, 0,
                       MPI_COMM_WORLD, &mpi_req);
             MPI_Recv(buf, n*sizeof(double), MPI_BYTE, b, 0,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
+        }
+        for (i = 0; i < n; i++)
+        {
+            v[i] = buf[i];
+        }
+        free(buf);
+    }
+}
+
+static void exchange_ints(int b, int *v, int n)
+{
+    int *buf;
+    int     i;
+
+    if (v)
+    {
+        buf =   (int*)malloc(n*sizeof(int));
+        /*
+           MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+           buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+           ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+         */
+        {
+            MPI_Request mpi_req;
+
+            MPI_Isend(v, n*sizeof(int), MPI_BYTE, b, 0,
+                      MPI_COMM_WORLD, &mpi_req);
+            MPI_Recv(buf, n*sizeof(int), MPI_BYTE, b, 0,
                      MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
         }
@@ -1169,4 +1205,140 @@ static void exchange_state(int b, ReplicaState *state)
     exchange_doubles(ms, b, &state->baros_integral, 1);
     exchange_rvecs(ms, b, state->x.rvec_array(), state->natoms);
     exchange_rvecs(ms, b, state->v.rvec_array(), state->natoms);    */
+}
+
+/* I'm flattening the dynamic pointers that describe a cellList
+    into a single int fixed size int array in the following format
+    list.length, list.values; head.length, head.values; 
+    neighbors[0].length, 
+ *  for (int i = 0; i < neighbors[0].length; i++)
+ *                  neighbors[0][i].length, neighbors[0][i].values 
+ */
+
+static void exchange_cell_list(int b, ReplicaState * stateGlobal){
+    
+    int *other_replica;
+    int *my_replica;
+    int *buf;
+   
+    // allocation_for_other_replica
+    // list                 v[0]        1
+    // head                 v[1]        2
+    // neighbors            v[2]        3
+    // for i : neighbors[i]
+    //  neighbors[i]        v[3 + i]
+    // 
+    // We assume NVT / NPT ensembles "allocation_for_other_replica" should be the same length
+    // b/c they have an equal number of molecules and index 2 should  v[2] equal each other
+    
+    int allocation_for_other_replica = stateGlobal->cellList->neighbors[0].size() + 3;
+    
+    other_replica       =      (int*)malloc(sizeof(int)*allocation_for_other_replica);
+    my_replica          =      (int*)malloc(sizeof(int)*allocation_for_other_replica);
+    
+    other_replica[0]   =    my_replica[0]    =      stateGlobal->cellList->list.size();
+    other_replica[0]   =    my_replica[1]    =      stateGlobal->cellList->head[0].size();
+    other_replica[0]   =    my_replica[2]    =      stateGlobal->cellList->neighbors[0].size();
+    
+    for (int i = 0; i < stateGlobal->cellList->neighbors[0].size(); i++){
+        other_replica[3+i]    =    my_replica[3+i] = ((stateGlobal->cellList->neighbors[0]).at(i)).size();
+    }
+    
+    exchange_ints(b, other_replica, allocation_for_other_replica);
+    
+    /*  We have the the other replica's and our own allocation requirement.
+     So we index and allocate */
+    
+    int sum_total_of_allocation_requirements_other_replica = allocation_for_other_replica;
+    int sum_total_of_allocation_requirements_my_replica = allocation_for_other_replica;
+
+    for (int i = 0; i < allocation_for_other_replica; i++){
+        sum_total_of_allocation_requirements_other_replica  +=   other_replica[i];
+        sum_total_of_allocation_requirements_my_replica     +=   my_replica[i];
+    }
+    
+    int larger_of_two_sums;
+    
+    if (sum_total_of_allocation_requirements_other_replica >= sum_total_of_allocation_requirements_my_replica) {
+        larger_of_two_sums = sum_total_of_allocation_requirements_other_replica;
+    } else {
+        larger_of_two_sums = sum_total_of_allocation_requirements_my_replica;
+    }
+    
+    int * full_other_replica    =   (int*)malloc(sizeof(int)*larger_of_two_sums);
+    int * full_my_replica       =   (int*)malloc(sizeof(int)*larger_of_two_sums);
+    
+    int counter = 0;
+    
+    full_my_replica[counter]  =   stateGlobal->cellList->list.size();
+    
+    counter++;
+    
+    for (int i = 0; i < stateGlobal->cellList->list.size(); i++){
+        full_my_replica[counter]    =   stateGlobal->cellList->list[i];
+        counter++;
+    }
+    
+    full_my_replica[counter]  =     stateGlobal->cellList->head[0].size();
+    counter++;
+    
+    for ( int i = 0; i < stateGlobal->cellList->head[0].size(); i++){
+        full_my_replica[counter]    =   (stateGlobal->cellList->head[0]).at(i);
+        counter++;
+    }
+    
+    full_my_replica[counter]    =   stateGlobal->cellList->neighbors[0].size();
+    counter++;
+    
+    for (int i = 0; i < stateGlobal->cellList->neighbors[0].size(); i++){
+        
+        full_my_replica[counter]    =   ((stateGlobal->cellList->neighbors[0]).at(i)).size();
+        counter++;
+    
+        for (int j = 0; j < stateGlobal->cellList->neighbors[0][i].size(); j++){
+            full_my_replica[counter]    =   ((stateGlobal->cellList->neighbors[0]).at(i)).at(j);
+            counter++;
+        }
+    }
+    
+    ///////////////////////////// error here?!?!?!
+        
+    exchange_ints(b, full_my_replica, larger_of_two_sums);
+    
+    //////////////////////////// resize and overwrite my own cell list vectors
+    
+    int write_counter = 0;
+    
+    stateGlobal->cellList->list.resize(full_my_replica[write_counter]);
+    write_counter++;
+        
+    for (int i = 0; i < stateGlobal->cellList->list.size(); i++){
+        stateGlobal->cellList->list[i]  = full_my_replica[write_counter];
+        write_counter++;
+    }
+    
+    stateGlobal->cellList->head[0].resize(full_my_replica[write_counter]);
+    write_counter++;
+    
+    for ( int i = 0; i < stateGlobal->cellList->head[0].size(); i++){
+        stateGlobal->cellList->head[0][i]   =   full_my_replica[write_counter];
+        write_counter++;
+    }
+    
+    stateGlobal->cellList->neighbors[0].resize(full_my_replica[write_counter]);
+    write_counter++;
+    
+    for (int i = 0; i < stateGlobal->cellList->neighbors[0].size(); i++){
+        
+        stateGlobal->cellList->neighbors[0][i].resize(full_my_replica[write_counter]);
+        write_counter++;
+    
+        for (int j = 0; j < stateGlobal->cellList->neighbors[0][i].size(); j++){
+            stateGlobal->cellList->neighbors[0][i][j]   =   full_my_replica[write_counter];
+            write_counter++;
+        }
+    }
+    
+    return;
+        
 }

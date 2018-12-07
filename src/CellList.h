@@ -82,7 +82,7 @@ public:
   // true if every particle is a member of exactly one cell
   bool IsExhaustive() const;
 
-private:
+//private:
   static const int END_CELL = -1;
 
   // Resize all boxes to match current axes
