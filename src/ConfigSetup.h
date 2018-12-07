@@ -291,6 +291,8 @@ struct Statistics {
   TrackedVars vars;
 };
 struct Output {
+  bool  useMultidir;
+  std::string replica_path;
   SysState state, restart;
   Statistics statistics;
   EventSettings console;

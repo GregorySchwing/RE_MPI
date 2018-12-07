@@ -33,10 +33,21 @@ Simulation::Simulation(char const*const configFileName)
   //recal Init for static value for initializing ewald since ewald is
   //initialized in system
   staticValues->InitOver(set, *system);
+  
+  const bool useMultidir = nnodes>1;
+  if(nnodes>1){
+  //if(nnodes>1){
+   ReplDirSetup rd(staticValues->forcefield.T_in_K, replExParams);
+   set.config.out.replica_path       =  rd.path_to_replica_directory;
+   set.config.out.useMultidir =  true;
+  } else {
+      set.config.out.replica_path       = "";
+      set.config.out.useMultidir = false;
+  }  
+  
   cpu = new CPUSide(*system, *staticValues);
   cpu->Init(set.pdb, set.config.out, set.config.sys.step.equil,
             totalSteps);
-
   //Dump combined PSF
   PSFOutput psfOut(staticValues->mol, *system, set.mol.kindMap,
                    set.pdb.atoms.resKindNames);

@@ -40,6 +40,7 @@
 #include "XYZArray.h"
 #include "CellList.h"
 #include <mpi.h>
+#include <iterator>
 //#include "ReplicaExchangeHelper.cpp"
 
 #include <cmath>
@@ -398,7 +399,8 @@ bool replica_exchange(FILE *fplog, struct gmx_repl_ex *re,
                     
                    
                     exchange_potential(exchange_partner, stateGlobal);
-                    exchange_cell_list(exchange_partner, stateGlobal);
+                    //exchange_cell_list(exchange_partner, stateGlobal);
+             
 
                     exchange_doubles(exchange_partner, stateGlobal->coordinates->x, stateGlobal->coordinates->Count());
                     exchange_doubles(exchange_partner, stateGlobal->coordinates->y, stateGlobal->coordinates->Count());
@@ -407,6 +409,8 @@ bool replica_exchange(FILE *fplog, struct gmx_repl_ex *re,
                     exchange_doubles(exchange_partner, stateGlobal->com->x, stateGlobal->com->Count());
                     exchange_doubles(exchange_partner, stateGlobal->com->y, stateGlobal->com->Count());
                     exchange_doubles(exchange_partner, stateGlobal->com->z, stateGlobal->com->Count());
+                    
+                    stateGlobal->cellList->RebuildNeighbors(0);
                 }
             }
     }
@@ -1217,58 +1221,77 @@ static void exchange_state(int b, ReplicaState *state)
 
 static void exchange_cell_list(int b, ReplicaState * stateGlobal){
     
-    int *other_replica;
-    int *my_replica;
-    int *buf;
+    unsigned long *other_replica;
+    unsigned long *my_replica;
+    unsigned long *buf;
    
     // allocation_for_other_replica
-    // list                 v[0]        1
-    // head                 v[1]        2
-    // neighbors            v[2]        3
+    // list                 v[0]        
+    // head                 v[1]        
+    // neighbors            v[2]        
     // for i : neighbors[i]
     //  neighbors[i]        v[3 + i]
     // 
     // We assume NVT / NPT ensembles "allocation_for_other_replica" should be the same length
     // b/c they have an equal number of molecules and index 2 should  v[2] equal each other
     
-    int allocation_for_other_replica = stateGlobal->cellList->neighbors[0].size() + 3;
+    unsigned long allocation_for_other_replica = stateGlobal->cellList->neighbors[0].size() + 3;
     
-    other_replica       =      (int*)malloc(sizeof(int)*allocation_for_other_replica);
-    my_replica          =      (int*)malloc(sizeof(int)*allocation_for_other_replica);
+    other_replica       =      (unsigned long*)malloc(sizeof(unsigned long)*allocation_for_other_replica);
+    my_replica          =      (unsigned long*)malloc(sizeof(unsigned long)*allocation_for_other_replica);
     
     other_replica[0]   =    my_replica[0]    =      stateGlobal->cellList->list.size();
+    
     other_replica[0]   =    my_replica[1]    =      stateGlobal->cellList->head[0].size();
+    
     other_replica[0]   =    my_replica[2]    =      stateGlobal->cellList->neighbors[0].size();
+    
+       for (int i = 0; i < allocation_for_other_replica; i++){
+    
+        printf("\n b4 other_%d    %lu \n", i, other_replica[i]);
+    printf("\n b4 my_%d    %lu  \n", i, my_replica[i]);
+    cout.flush();
+        
+    }
+    
     
     for (int i = 0; i < stateGlobal->cellList->neighbors[0].size(); i++){
         other_replica[3+i]    =    my_replica[3+i] = ((stateGlobal->cellList->neighbors[0]).at(i)).size();
     }
     
-    exchange_ints(b, other_replica, allocation_for_other_replica);
+        printf("\n\n\nstateGlobal->cellList->head[0].size(): %lu \n\n\n",stateGlobal->cellList->head[0].size());
+
+    printf("\n\n\nstateGlobal->cellList->neighbors[0].size(): %lu \n\n\n",stateGlobal->cellList->neighbors[0].size());
+        cout.flush();
+        
+     MPI_Request mpi_req;
+
+            MPI_Isend(my_replica, allocation_for_other_replica*sizeof(unsigned long), MPI_BYTE, b, 0,
+                      MPI_COMM_WORLD, &mpi_req);
+            MPI_Recv(other_replica, allocation_for_other_replica*sizeof(unsigned long), MPI_BYTE, b, 0,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
+    
     
     /*  We have the the other replica's and our own allocation requirement.
      So we index and allocate */
     
-    int sum_total_of_allocation_requirements_other_replica = allocation_for_other_replica;
-    int sum_total_of_allocation_requirements_my_replica = allocation_for_other_replica;
+    unsigned long sum_total_of_allocation_requirements_other_replica = allocation_for_other_replica;
+    unsigned long sum_total_of_allocation_requirements_my_replica = allocation_for_other_replica;
 
     for (int i = 0; i < allocation_for_other_replica; i++){
         sum_total_of_allocation_requirements_other_replica  +=   other_replica[i];
         sum_total_of_allocation_requirements_my_replica     +=   my_replica[i];
+        printf("\n aftr other_%d    %lu  \n", i, other_replica[i]);
+    printf("\n after my_%d    %lu  \n", i, my_replica[i]);
+    cout.flush();
+        
     }
     
-    int larger_of_two_sums;
+    unsigned long * full_other_replica    =   (unsigned long*)malloc(sizeof(unsigned long)*sum_total_of_allocation_requirements_other_replica);
+    unsigned long * full_my_replica       =   (unsigned long*)malloc(sizeof(unsigned long)*sum_total_of_allocation_requirements_my_replica);
     
-    if (sum_total_of_allocation_requirements_other_replica >= sum_total_of_allocation_requirements_my_replica) {
-        larger_of_two_sums = sum_total_of_allocation_requirements_other_replica;
-    } else {
-        larger_of_two_sums = sum_total_of_allocation_requirements_my_replica;
-    }
-    
-    int * full_other_replica    =   (int*)malloc(sizeof(int)*larger_of_two_sums);
-    int * full_my_replica       =   (int*)malloc(sizeof(int)*larger_of_two_sums);
-    
-    int counter = 0;
+    unsigned long counter = 0;
     
     full_my_replica[counter]  =   stateGlobal->cellList->list.size();
     
@@ -1295,46 +1318,55 @@ static void exchange_cell_list(int b, ReplicaState * stateGlobal){
         full_my_replica[counter]    =   ((stateGlobal->cellList->neighbors[0]).at(i)).size();
         counter++;
     
-        for (int j = 0; j < stateGlobal->cellList->neighbors[0][i].size(); j++){
+        for (unsigned long j = 0; j < stateGlobal->cellList->neighbors[0][i].size(); j++){
             full_my_replica[counter]    =   ((stateGlobal->cellList->neighbors[0]).at(i)).at(j);
             counter++;
         }
     }
     
+    printf("\n\n\n\n\n\n\n\n my_    %lu  \n\n\n\n\n\n\n\n\n\n", sum_total_of_allocation_requirements_my_replica);
+    printf("\n\n\n\n\n\n\n\n other_    %lu  \n\n\n\n\n\n\n\n\n\n", sum_total_of_allocation_requirements_other_replica);
+    cout.flush();
+    
     ///////////////////////////// error here?!?!?!
         
-    exchange_ints(b, full_my_replica, larger_of_two_sums);
+
+            MPI_Isend(full_my_replica, sum_total_of_allocation_requirements_my_replica*sizeof(unsigned long), MPI_BYTE, b, 0,
+                      MPI_COMM_WORLD, &mpi_req);
+            MPI_Recv(full_other_replica, sum_total_of_allocation_requirements_other_replica*sizeof(unsigned long), MPI_BYTE, b, 0,
+                     MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Wait(&mpi_req, MPI_STATUS_IGNORE);
     
     //////////////////////////// resize and overwrite my own cell list vectors
     
-    int write_counter = 0;
+    unsigned long write_counter = 0;
     
-    stateGlobal->cellList->list.resize(full_my_replica[write_counter]);
+    stateGlobal->cellList->list.resize(full_other_replica[write_counter]);
     write_counter++;
         
     for (int i = 0; i < stateGlobal->cellList->list.size(); i++){
-        stateGlobal->cellList->list[i]  = full_my_replica[write_counter];
+        stateGlobal->cellList->list[i]  = full_other_replica[write_counter];
         write_counter++;
     }
     
-    stateGlobal->cellList->head[0].resize(full_my_replica[write_counter]);
+    stateGlobal->cellList->head[0].resize(full_other_replica[write_counter]);
     write_counter++;
     
     for ( int i = 0; i < stateGlobal->cellList->head[0].size(); i++){
-        stateGlobal->cellList->head[0][i]   =   full_my_replica[write_counter];
+        stateGlobal->cellList->head[0][i]   =   full_other_replica[write_counter];
         write_counter++;
     }
     
-    stateGlobal->cellList->neighbors[0].resize(full_my_replica[write_counter]);
+    stateGlobal->cellList->neighbors[0].resize(full_other_replica[write_counter]);
     write_counter++;
     
     for (int i = 0; i < stateGlobal->cellList->neighbors[0].size(); i++){
         
-        stateGlobal->cellList->neighbors[0][i].resize(full_my_replica[write_counter]);
+        stateGlobal->cellList->neighbors[0][i].resize(full_other_replica[write_counter]);
         write_counter++;
     
-        for (int j = 0; j < stateGlobal->cellList->neighbors[0][i].size(); j++){
-            stateGlobal->cellList->neighbors[0][i][j]   =   full_my_replica[write_counter];
+        for (unsigned long j = 0; j < stateGlobal->cellList->neighbors[0][i].size(); j++){
+            stateGlobal->cellList->neighbors[0][i][j]   =   full_other_replica[write_counter];
             write_counter++;
         }
     }
