@@ -1,1 +1,0 @@
-/usr/bin/c++   -fopenmp -O3 -DNDEBUG  -rdynamic CMakeFiles/Main.cpp.o.dir/src/Main.cpp.o  -o Main.cpp.o /usr/local/lib/libmpich.a /usr/local/lib/libopa.a /usr/local/lib/libmpl.a -lrt -lpthread 

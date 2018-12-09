@@ -1,6 +1,0 @@
-/home/greg/GOMC/bin/CMakeFiles/rebuild_cache.dir
-/home/greg/GOMC/bin/CMakeFiles/edit_cache.dir
-/home/greg/GOMC/bin/CMakeFiles/NPT.dir
-/home/greg/GOMC/bin/CMakeFiles/GCMC.dir
-/home/greg/GOMC/bin/CMakeFiles/GEMC.dir
-/home/greg/GOMC/bin/CMakeFiles/NVT.dir
