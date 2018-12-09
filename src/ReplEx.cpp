@@ -157,7 +157,7 @@ bDiff = false;
         for (s = 0; s < nnodes; s++)
         {
             re->q[ere][s] = qall[s];
-            printf("replica %d qall[%d] = %f\n", nodeid, s, qall[s]);
+            //printf("replica %d qall[%d] = %f\n", nodeid, s, qall[s]);
         }
       
     }

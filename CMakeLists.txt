@@ -98,4 +98,3 @@ endif()
 
 find_package(MPI REQUIRED) #make it REQUIRED, if you want
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-find_package(GROMACS REQUIRED)
